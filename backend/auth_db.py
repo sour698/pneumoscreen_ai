@@ -8,10 +8,12 @@ from datetime import datetime
 USERS_DB_PATH = "database/users.json"
 
 def get_users_db_path():
+    """Get path to users database"""
     os.makedirs("database", exist_ok=True)
     return USERS_DB_PATH
 
 def load_users():
+    """Load all users from database"""
     db_path = get_users_db_path()
     if not os.path.exists(db_path):
         return {}
@@ -22,16 +24,19 @@ def load_users():
         return {}
 
 def save_users(users):
+    """Save users to database"""
     db_path = get_users_db_path()
     with open(db_path, "w") as f:
         json.dump(users, f, indent=2)
 
 def hash_password(password: str) -> str:
+    """Hash a password using SHA256 with salt"""
     salt = secrets.token_hex(16)
     hash_obj = hashlib.sha256((password + salt).encode())
     return f"{salt}:{hash_obj.hexdigest()}"
 
 def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against its hash"""
     try:
         salt, stored_hash = hashed.split(":")
         hash_obj = hashlib.sha256((password + salt).encode())
@@ -40,7 +45,9 @@ def verify_password(password: str, hashed: str) -> bool:
         return False
 
 def create_user(email: str, password: str, name: str) -> bool:
+    """Create a new user account"""
     users = load_users()
+    
     if email in users:
         return False
     
@@ -51,47 +58,67 @@ def create_user(email: str, password: str, name: str) -> bool:
         "created_at": datetime.now().isoformat(),
         "user_folder": email.replace('@', '_at_').replace('.', '_dot_')
     }
+    
     save_users(users)
     return True
 
 def authenticate_user(email: str, password: str):
+    """Authenticate a user"""
     users = load_users()
+    
     if email not in users:
         return None
+    
     user = users[email]
     if verify_password(password, user["password"]):
-        return {"email": user["email"], "name": user["name"], "user_folder": user["user_folder"]}
+        return {
+            "email": user["email"],
+            "name": user["name"],
+            "user_folder": user["user_folder"]
+        }
+    
     return None
 
 def get_user(email: str):
+    """Get user by email"""
     users = load_users()
     if email in users:
         user = users[email]
-        return {"email": user["email"], "name": user["name"], "user_folder": user["user_folder"]}
+        return {
+            "email": user["email"],
+            "name": user["name"],
+            "user_folder": user["user_folder"]
+        }
     return None
 
 def change_password(email: str, old_password: str, new_password: str) -> bool:
+    """Change user password"""
     users = load_users()
+    
     if email not in users:
         return False
+    
     if not verify_password(old_password, users[email]["password"]):
         return False
+    
     users[email]["password"] = hash_password(new_password)
     save_users(users)
     return True
 
 def delete_user_account(email: str) -> bool:
+    """Delete user account and all associated data"""
     users = load_users()
+    
     if email not in users:
         return False
     
-    # Delete user's database file
+    # Delete user's database file (patients)
     from backend.db import get_user_db_path
     db_path = get_user_db_path(email)
     if os.path.exists(db_path):
         os.remove(db_path)
     
-    # Delete user's storage folder
+    # Delete user's storage folder (X-rays and reports)
     user_folder = email.replace('@', '_at_').replace('.', '_dot_')
     storage_path = f"storage/{user_folder}"
     if os.path.exists(storage_path):
@@ -103,7 +130,16 @@ def delete_user_account(email: str) -> bool:
     return True
 
 def get_user_stats(email: str):
+    """Get user statistics (patient count, visit count)"""
     from backend.db import load_db
+    
     reports = load_db(email)
-    unique_patients = set(r.get("patient_id") for r in reports)
-    return {"total_patients": len(unique_patients), "total_visits": len(reports)}
+    unique_patients = set()
+    
+    for report in reports:
+        unique_patients.add(report.get("patient_id"))
+    
+    return {
+        "total_patients": len(unique_patients),
+        "total_visits": len(reports)
+    }

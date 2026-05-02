@@ -3,7 +3,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
 from datetime import datetime
-from zoneinfo import ZoneInfo
+import pytz  # <-- YOU NEED THIS IMPORT
 
 def generate_report(patient, prediction, risk, heatmap_image):
 
@@ -36,7 +36,7 @@ def generate_report(patient, prediction, risk, heatmap_image):
     content = []
 
     # ─────────────────────────────────────────
-    # HEADER - UPDATED (Two lines for better display)
+    # HEADER
     # ─────────────────────────────────────────
     content.append(Paragraph("PneumoScreen AI", center_style))
     content.append(Spacer(1, 3))
@@ -44,18 +44,18 @@ def generate_report(patient, prediction, risk, heatmap_image):
     content.append(Spacer(1, 15))
 
     # ─────────────────────────────────────────
-    # PATIENT DETAILS TABLE (IMPROVED)
+    # PATIENT DETAILS TABLE (WITH IST TIMEZONE)
     # ─────────────────────────────────────────
-    IST = ZoneInfo("Asia/Kolkata")
+    IST = pytz.timezone("Asia/Kolkata")
     now = datetime.now(IST)
 
-    date_time = now.strftime("%d-%m-%Y %H:%M")
+    date_time = now.strftime("%d-%m-%Y %H:%M:%S")
     visit_date = now.strftime("%d-%m-%Y")
 
     table_data = [
-       ["Patient ID", patient.get("id", "N/A"), "Report ID", patient.get("report_id", "N/A")],
-       ["Date", date_time, "Age / Sex", f"{patient.get('age', 'N/A')} / {patient.get('gender', 'N/A')}"],
-       ["Ref. Doctor", patient.get("doctor", "Not Specified"), "Visit Date", visit_date]
+        ["Patient ID", patient.get("id", "N/A"), "Report ID", patient.get("report_id", "N/A")],
+        ["Date & Time", date_time, "Age / Sex", f"{patient.get('age', 'N/A')} / {patient.get('gender', 'N/A')}"],
+        ["Ref. Doctor", patient.get("doctor", "Not Specified"), "Visit Date", visit_date]
     ]
 
     table = Table(table_data, colWidths=[100, 150, 100, 150])
@@ -74,7 +74,7 @@ def generate_report(patient, prediction, risk, heatmap_image):
     content.append(Spacer(1, 10))
 
     # ─────────────────────────────────────────
-    # FINDINGS (CLINICAL LANGUAGE)
+    # FINDINGS
     # ─────────────────────────────────────────
     content.append(Paragraph("<b>Findings:</b>", heading_style))
 
@@ -129,7 +129,7 @@ def generate_report(patient, prediction, risk, heatmap_image):
     content.append(Spacer(1, 15))
 
     # ─────────────────────────────────────────
-    # HEATMAP IMAGE (SAFE SAVE)
+    # HEATMAP IMAGE
     # ─────────────────────────────────────────
     img_path = "temp_heatmap.jpg"
 

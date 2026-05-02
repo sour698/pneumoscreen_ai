@@ -2,7 +2,7 @@ import yagmail
 import os
 from datetime import datetime
 import pytz
-from zoneinfo import ZoneInfo
+
 # Gmail Configuration
 EMAIL = "sd1898691@gmail.com"
 APP_PASSWORD = "tfakvqqrbvajddoi"  # Your App Password
@@ -24,7 +24,9 @@ def send_email(to_email, file_path, patient_name="Patient", prediction=None):
         # Initialize yagmail
         yag = yagmail.SMTP(EMAIL, APP_PASSWORD)
         
-        current_date = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%B %d, %Y at %I:%M %p")
+        IST = pytz.timezone("Asia/Kolkata")
+
+        current_date = datetime.now(IST).strftime("%B %d, %Y at %I:%M %p")
         
         # Create email subject
         subject = "🏥 Clinical AI System - Your Medical Diagnostic Report"

@@ -14,7 +14,7 @@ DEVICE = torch.device("cpu")   # 🔥 FORCE CPU for stability
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 MODEL_PATH = hf_hub_download(
-    repo_id="https://huggingface.co/sourav2069/xray-vit-model/blob/main/vit_xray.pt",
+    repo_id="sourav2069/xray-vit-model",
     filename="vit_xray.pt"
 )
 CLASSES_PATH = os.path.join(BASE_DIR, "..", "backend", "classes.json")

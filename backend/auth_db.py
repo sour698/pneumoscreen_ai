@@ -113,10 +113,13 @@ def delete_user_account(email: str) -> bool:
         return False
     
     # Delete user's database file (patients)
-    from backend.db import get_user_db_path
-    db_path = get_user_db_path(email)
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    try:
+        from backend.db import get_user_db_path
+        db_path = get_user_db_path(email)
+        if db_path and os.path.exists(db_path):
+            os.remove(db_path)
+    except:
+        pass
     
     # Delete user's storage folder (X-rays and reports)
     user_folder = email.replace('@', '_at_').replace('.', '_dot_')
@@ -131,15 +134,18 @@ def delete_user_account(email: str) -> bool:
 
 def get_user_stats(email: str):
     """Get user statistics (patient count, visit count)"""
-    from backend.db import load_db
-    
-    reports = load_db(email)
-    unique_patients = set()
-    
-    for report in reports:
-        unique_patients.add(report.get("patient_id"))
-    
-    return {
-        "total_patients": len(unique_patients),
-        "total_visits": len(reports)
-    }
+    try:
+        from backend.db import load_db
+        reports = load_db(email)
+        unique_patients = set()
+        
+        for report in reports:
+            unique_patients.add(report.get("patient_id"))
+        
+        return {
+            "total_patients": len(unique_patients),
+            "total_visits": len(reports)
+        }
+    except Exception as e:
+        print(f"Error getting user stats: {e}")
+        return {"total_patients": 0, "total_visits": 0}

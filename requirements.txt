@@ -10,3 +10,5 @@ reportlab
 yagmail
 opencv-python-headless
 pytz
+bcrypt
+python-dotenv

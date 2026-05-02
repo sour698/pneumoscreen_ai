@@ -9,6 +9,8 @@ import hashlib
 import re
 from datetime import datetime
 import io
+import pytz
+
 
 from backend.db import add_patient, delete_patient, delete_report, load_db
 from backend.mailer import send_email
@@ -292,7 +294,7 @@ def add_login_record(username: str):
     history = load_login_history()
     history.append({
         "username": username,
-        "login_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "login_time":datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"),
         "ip_address": "Local",
         "status": "success"
     })
@@ -469,7 +471,8 @@ if st.session_state["authenticated"]:
             st.markdown("**🕐 Last Login**  \n`First login`")
     
     with col3:
-        st.markdown(f"**📅 Current Time**  \n`{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`")
+        now_time = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
+        st.markdown(f"**📅 Current Time**  \n`{now_time}`")
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.divider()
@@ -635,7 +638,8 @@ if st.session_state["authenticated"]:
         existing = find_existing_patient(name, phone)
 
         # Generate unique Report ID for each visit
-        report_id = f"R-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+        now = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y%m%d")
+        report_id = f"R-{now}-{uuid.uuid4().hex[:6].upper()}"
 
         if existing:
             patient_id = existing["patient_id"]
@@ -723,7 +727,7 @@ if st.session_state["authenticated"]:
             "risk":         risk_level,
             "report_path":  report_url,
             "image_url":    image_url,
-            "visit_date":   datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "visit_date":   datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
         })
 
         # ── EMAIL PORTION ─────────────────────────────────

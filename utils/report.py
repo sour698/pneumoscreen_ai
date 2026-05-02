@@ -3,7 +3,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
 from datetime import datetime
-
+import pytz
 
 def generate_report(patient, prediction, risk, heatmap_image):
 
@@ -46,10 +46,14 @@ def generate_report(patient, prediction, risk, heatmap_image):
     # ─────────────────────────────────────────
     # PATIENT DETAILS TABLE (IMPROVED)
     # ─────────────────────────────────────────
+    now = datetime.now()
+    date_time = now.strftime("%d-%m-%Y %H:%M")
+    visit_date = now.strftime("%d-%m-%Y")
+
     table_data = [
-        ["Patient ID", patient.get("id", "N/A"), "Report ID", patient.get("report_id", "N/A")],
-        ["Date", datetime.now().strftime("%d-%m-%Y %H:%M"), "Age / Sex", f"{patient.get('age', 'N/A')} / {patient.get('gender', 'N/A')}"],
-        ["Ref. Doctor", patient.get("doctor", "Not Specified"), "Visit Date", datetime.now().strftime("%d-%m-%Y")]
+       ["Patient ID", patient.get("id", "N/A"), "Report ID", patient.get("report_id", "N/A")],
+       ["Date", date_time, "Age / Sex", f"{patient.get('age', 'N/A')} / {patient.get('gender', 'N/A')}"],
+       ["Ref. Doctor", patient.get("doctor", "Not Specified"), "Visit Date", visit_date]
     ]
 
     table = Table(table_data, colWidths=[100, 150, 100, 150])

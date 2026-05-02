@@ -46,7 +46,9 @@ def generate_report(patient, prediction, risk, heatmap_image):
     # ─────────────────────────────────────────
     # PATIENT DETAILS TABLE (IMPROVED)
     # ─────────────────────────────────────────
-    now = datetime.now()
+    IST = pytz.timezone("Asia/Kolkata")
+    now = datetime.now(IST)
+
     date_time = now.strftime("%d-%m-%Y %H:%M")
     visit_date = now.strftime("%d-%m-%Y")
 

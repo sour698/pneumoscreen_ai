@@ -3,7 +3,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
 from datetime import datetime
-import pytz
+from zoneinfo import ZoneInfo
 
 def generate_report(patient, prediction, risk, heatmap_image):
 
@@ -46,7 +46,7 @@ def generate_report(patient, prediction, risk, heatmap_image):
     # ─────────────────────────────────────────
     # PATIENT DETAILS TABLE (IMPROVED)
     # ─────────────────────────────────────────
-    IST = pytz.timezone("Asia/Kolkata")
+    IST = ZoneInfo("Asia/Kolkata")
     now = datetime.now(IST)
 
     date_time = now.strftime("%d-%m-%Y %H:%M")

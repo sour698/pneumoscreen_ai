@@ -312,15 +312,35 @@ def validate_email(email: str) -> bool:
 def login_screen():
     """Display login/signup screen"""
     
+    # Center everything
     st.markdown("""
     <div style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
-        <div style="background: linear-gradient(135deg, #1f6feb11, #388bfd11); 
-                    border-radius: 20px; padding: 2.5rem; text-align: center;
-                    border: 1px solid #1f6feb33; max-width: 450px; width: 100%;">
-            <div style="font-size: 4rem; margin-bottom: 1rem;">🏥</div>
-            <h1 style="color: #58a6ff; margin-bottom: 0.5rem;">PneumoScreen AI</h1>
-            <p style="color: #8b949e; margin-bottom: 1.5rem;">Deep Learning-Based Pneumonia Screening & Reporting System</p>
+        <div style="text-align: center; max-width: 500px; width: 100%;">
     """, unsafe_allow_html=True)
+    
+    # Logo and Title - Single line "PneumoScreen AI" with emoji
+    st.markdown("""
+    <div style="margin-bottom: 1rem;">
+        <div style="font-size: 5rem; margin-bottom: 0.5rem;">🏥</div>
+        <h1 style="font-size: 2.5rem; font-weight: 700; margin: 0; color: #e6edf3;">
+            PneumoScreen AI
+        </h1>
+        <p style="color: #8b949e; margin-top: 0.5rem; font-size: 0.9rem;">
+            Deep Learning-Based Pneumonia Screening & Reporting System
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Feature badges (four badges in a row) - matching second image
+    st.markdown("""
+    <div style="display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; margin: 1.5rem 0 2rem 0;">
+        <span style="background: rgba(31, 111, 235, 0.15); padding: 0.35rem 1rem; border-radius: 30px; font-size: 0.75rem; color: #58a6ff; border: 1px solid rgba(31, 111, 235, 0.3);">🧠 AI-Powered Analysis</span>
+        <span style="background: rgba(31, 111, 235, 0.15); padding: 0.35rem 1rem; border-radius: 30px; font-size: 0.75rem; color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3);">📊 Clinical Grade</span>
+        <span style="background: rgba(31, 111, 235, 0.15); padding: 0.35rem 1rem; border-radius: 30px; font-size: 0.75rem; color: #58a6ff; border: 1px solid rgba(31, 111, 235, 0.3);">🩻 Chest X-Ray</span>
+        <span style="background: rgba(31, 111, 235, 0.15); padding: 0.35rem 1rem; border-radius: 30px; font-size: 0.75rem; color: #f85149; border: 1px solid rgba(248, 81, 73, 0.3);">⚡ Real-Time Detection</span>
+    </div>
+    """, unsafe_allow_html=True)
+
     
     col1, col2 = st.columns(2)
     with col1:

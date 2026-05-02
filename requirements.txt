@@ -3,6 +3,7 @@ torch
 torchvision
 transformers
 numpy
+scipy
 opencv-python
 pillow
 reportlab

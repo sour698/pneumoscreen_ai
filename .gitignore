@@ -1,0 +1,15 @@
+# virtual environment
+venv/
+
+# python cache
+__pycache__/
+*.pyc
+
+# model files (IMPORTANT)
+*.pt
+*.pth
+
+# dataset folders
+data/
+dataset/
+backend/models/

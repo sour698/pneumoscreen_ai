@@ -1,0 +1,9 @@
+streamlit
+torch
+torchvision
+transformers
+numpy
+opencv-python
+pillow
+reportlab
+yagmail

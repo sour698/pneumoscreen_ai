@@ -12,7 +12,7 @@ import io
 import pytz
 
 from backend.db import add_patient, delete_patient, delete_report, load_db
-from backend.auth_db import create_user, authenticate_user, get_user
+from backend.auth_db import create_user, authenticate_user, get_user, change_password, delete_user_account, get_user_stats
 from backend.mailer import send_email
 
 from utils.inference import predict, model
@@ -103,7 +103,7 @@ h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
     box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.2) !important;
 }
 
-/* GENDER SELECTBOX FIX - Make text white */
+/* GENDER SELECTBOX FIX */
 .stSelectbox > div > div {
     background: #161b22 !important;
     border: 1px solid #30363d !important;
@@ -221,21 +221,6 @@ hr {
     color: #f85149;
 }
 
-/* Sidebar customization */
-.css-1d391kg, .stSidebar {
-    background: linear-gradient(180deg, #0a0e17 0%, #0d1117 100%);
-    border-right: 1px solid #30363d;
-}
-
-/* Metrics and stats cards */
-.metric-card {
-    background: linear-gradient(135deg, #161b22, #1c2128);
-    border-radius: 16px;
-    padding: 1rem;
-    border: 1px solid #30363d;
-    text-align: center;
-}
-
 /* Download button */
 .stDownloadButton > button {
     background: linear-gradient(135deg, #238636, #2ea043);
@@ -246,6 +231,40 @@ hr {
 }
 </style>
 """, unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# LOGIN HISTORY FUNCTIONS
+# ─────────────────────────────────────────────
+LOGIN_HISTORY_FILE = "login_history.json"
+
+def load_login_history():
+    if os.path.exists(LOGIN_HISTORY_FILE):
+        with open(LOGIN_HISTORY_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_login_history(history):
+    with open(LOGIN_HISTORY_FILE, "w") as f:
+        json.dump(history, f, indent=2)
+
+def add_login_record(username):
+    history = load_login_history()
+    history.append({
+        "username": username,
+        "login_time": datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "success"
+    })
+    save_login_history(history)
+
+def get_last_login(username):
+    history = load_login_history()
+    user_logins = [h for h in history if h["username"] == username]
+    if user_logins:
+        return user_logins[-1]["login_time"]
+    return None
+
+def get_all_logins():
+    return load_login_history()
 
 # ─────────────────────────────────────────────
 # SESSION STATE DEFAULTS
@@ -262,6 +281,10 @@ if "form_counter" not in st.session_state:
     st.session_state["form_counter"] = 0
 if "delete_report_id" not in st.session_state:
     st.session_state["delete_report_id"] = None
+if "confirm_delete_account" not in st.session_state:
+    st.session_state["confirm_delete_account"] = False
+if "confirm_clear_history" not in st.session_state:
+    st.session_state["confirm_clear_history"] = False
 
 for _field, _default in [("f_name", ""), ("f_age", 1), ("f_gender", ""),
                           ("f_email", ""), ("f_phone", ""), ("f_doctor", "")]:
@@ -299,7 +322,6 @@ def login_screen():
             <p style="color: #8b949e; margin-bottom: 1.5rem;">Deep Learning-Based Pneumonia Screening & Reporting System</p>
     """, unsafe_allow_html=True)
     
-    # Toggle between Login and Signup
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔐 Login", use_container_width=True, key="login_tab"):
@@ -326,6 +348,7 @@ def login_screen():
             else:
                 user = authenticate_user(email, password)
                 if user:
+                    add_login_record(email)
                     st.session_state["logged_in"] = True
                     st.session_state["user_email"] = user["email"]
                     st.session_state["user_name"] = user["name"]
@@ -333,7 +356,7 @@ def login_screen():
                 else:
                     st.error("Invalid email or password")
     
-    else:  # signup
+    else:
         st.subheader("Create New Account")
         
         with st.form("signup_form"):
@@ -363,7 +386,6 @@ def login_screen():
     </div>
     """, unsafe_allow_html=True)
 
-# Show login screen if not logged in
 if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
@@ -412,7 +434,120 @@ with col_profile:
 st.divider()
 
 # ─────────────────────────────────────────────
-# PATIENT IDENTITY HELPER (USER-SPECIFIC)
+# LOGIN INFO DISPLAY
+# ─────────────────────────────────────────────
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown(f"**👤 Current User**  \n`{st.session_state['user_name']}`")
+
+with col2:
+    last_login = get_last_login(st.session_state["user_email"])
+    if last_login:
+        st.markdown(f"**🕐 Last Login**  \n`{last_login}`")
+    else:
+        st.markdown("**🕐 Last Login**  \n`First login`")
+
+with col3:
+    now_time = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
+    st.markdown(f"**📅 Current Time**  \n`{now_time}`")
+
+st.markdown('</div>', unsafe_allow_html=True)
+st.divider()
+
+# ─────────────────────────────────────────────
+# SETTINGS PANEL (Change Password, Delete Account, Login History)
+# ─────────────────────────────────────────────
+with st.expander("⚙️ Account Settings"):
+
+    # Change Password
+    st.markdown("**🔒 Change Password**")
+    with st.form("change_password_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            current_pass = st.text_input("Current Password", type="password")
+            new_pass = st.text_input("New Password", type="password")
+        with col2:
+            confirm_pass = st.text_input("Confirm New Password", type="password")
+        chg_btn = st.form_submit_button("🔄 Update Password", use_container_width=True)
+    
+    if chg_btn:
+        if not current_pass or not new_pass:
+            st.error("Please fill all fields")
+        elif new_pass != confirm_pass:
+            st.error("New passwords do not match")
+        else:
+            from backend.auth_db import change_password
+            if change_password(st.session_state["user_email"], current_pass, new_pass):
+                st.success("✅ Password updated successfully!")
+            else:
+                st.error("Current password is incorrect")
+
+    st.markdown("---")
+    
+    # Login History
+    st.markdown("**📊 Login History**")
+    login_history = get_all_logins()
+    user_logins = [h for h in login_history if h["username"] == st.session_state["user_email"]]
+    
+    if user_logins:
+        history_data = []
+        for record in reversed(user_logins[-10:]):
+            history_data.append({
+                "Time": record["login_time"],
+                "Status": record["status"]
+            })
+        st.table(history_data)
+        
+        if st.button("🗑️ Clear My Login History", key="clear_history_btn"):
+            st.session_state["confirm_clear_history"] = True
+        
+        if st.session_state.get("confirm_clear_history", False):
+            st.warning("⚠️ Clear ALL your login history? This cannot be undone.")
+            col_yes, col_no = st.columns(2)
+            if col_yes.button("✅ Yes, Clear History", key="confirm_clear_yes"):
+                remaining = [h for h in login_history if h["username"] != st.session_state["user_email"]]
+                save_login_history(remaining)
+                st.success("✅ Login history cleared!")
+                st.session_state["confirm_clear_history"] = False
+                st.rerun()
+            if col_no.button("❌ Cancel", key="confirm_clear_no"):
+                st.session_state["confirm_clear_history"] = False
+                st.rerun()
+    else:
+        st.info("No login history available.")
+
+    st.markdown("---")
+    
+    # Delete Account
+    st.markdown("**🗑️ Delete Account**")
+    st.warning("⚠️ This will permanently delete ALL your data (patients, reports, and account).")
+    
+    if not st.session_state["confirm_delete_account"]:
+        if st.button("Delete My Account", key="init_delete_account"):
+            st.session_state["confirm_delete_account"] = True
+            st.rerun()
+    else:
+        st.error("⚠️ Are you absolutely sure? This cannot be undone!")
+        col_yes, col_no = st.columns(2)
+        if col_yes.button("✅ Yes, Delete My Account", key="confirm_del_account"):
+            from backend.auth_db import delete_user_account
+            if delete_user_account(st.session_state["user_email"]):
+                st.success("Account deleted successfully!")
+                st.session_state["logged_in"] = False
+                st.session_state["user_email"] = None
+                st.session_state["user_name"] = None
+                st.session_state["confirm_delete_account"] = False
+                st.rerun()
+        if col_no.button("❌ Cancel", key="cancel_del_account"):
+            st.session_state["confirm_delete_account"] = False
+            st.rerun()
+
+st.divider()
+
+# ─────────────────────────────────────────────
+# PATIENT IDENTITY HELPER
 # ─────────────────────────────────────────────
 def find_existing_patient(name: str, phone: str):
     reports = load_db(st.session_state["user_email"])
@@ -434,16 +569,16 @@ form_key = f"patient_form_{st.session_state['form_counter']}"
 with st.form(form_key):
     col1, col2 = st.columns(2)
     with col1:
-        name   = st.text_input("Full Name *",       value=st.session_state["f_name"])
-        age    = st.number_input("Age *", 1, 120,   value=int(st.session_state["f_age"]))
+        name = st.text_input("Full Name *", value=st.session_state["f_name"])
+        age = st.number_input("Age *", 1, 120, value=int(st.session_state["f_age"]))
         gender_options = ["Select", "Male", "Female", "Other"]
         current_gender = st.session_state["f_gender"] if st.session_state["f_gender"] in gender_options else "Select"
         gender_index = gender_options.index(current_gender) if current_gender in gender_options else 0
         gender = st.selectbox("Gender *", gender_options, index=gender_index)
     with col2:
-        email  = st.text_input("Patient Email * (@gmail.com)", value=st.session_state["f_email"])
-        phone  = st.text_input("Phone Number * (10 digits)",   value=st.session_state["f_phone"])
-        doctor = st.text_input("Referring Doctor",  value=st.session_state["f_doctor"])
+        email = st.text_input("Patient Email * (@gmail.com)", value=st.session_state["f_email"])
+        phone = st.text_input("Phone Number * (10 digits)", value=st.session_state["f_phone"])
+        doctor = st.text_input("Referring Doctor", value=st.session_state["f_doctor"])
 
     file = st.file_uploader("Upload Chest X-ray *", type=["png", "jpg", "jpeg"])
     
@@ -467,37 +602,32 @@ if clear_btn:
 # ANALYSIS LOGIC
 # ─────────────────────────────────────────────
 if analyze_btn:
-
     if not name or not phone or not email or not file:
         st.error("❌ Name, Phone Number, Email, and X-ray image are all required.")
         st.stop()
     
     if not gender or gender == "Select":
-        st.error("❌ Gender selection is mandatory. Please select Male, Female, or Other.")
+        st.error("❌ Gender selection is mandatory.")
         st.stop()
     
     if not validate_phone(phone):
-        st.error("❌ Phone number must be exactly 10 digits (numbers only).")
+        st.error("❌ Phone number must be exactly 10 digits.")
         st.stop()
     
     if not validate_email(email):
-        st.error("❌ Patient email must be a valid Gmail address (ending with @gmail.com).")
+        st.error("❌ Patient email must be @gmail.com")
         st.stop()
 
     existing = find_existing_patient(name, phone)
-
-    # Generate unique Report ID for each visit
     now_str = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y%m%d")
     report_id = f"R-{now_str}-{uuid.uuid4().hex[:6].upper()}"
 
     if existing:
         patient_id = existing["patient_id"]
-        st.info(f"🔁 **Returning patient detected.** Patient ID: `{patient_id}`")
-        st.info(f"📄 **New Report ID:** `{report_id}`")
+        st.info(f"🔁 Returning patient. ID: `{patient_id}` | New Report: `{report_id}`")
     else:
         patient_id = f"P-{uuid.uuid4().hex[:6].upper()}"
-        st.success(f"🆕 **New patient registered.** Patient ID: `{patient_id}`")
-        st.info(f"📄 **Report ID:** `{report_id}`")
+        st.success(f"🆕 New patient. ID: `{patient_id}` | Report: `{report_id}`")
 
     image = Image.open(file)
     st.image(image, caption="Uploaded X-ray", width=400)
@@ -505,21 +635,16 @@ if analyze_btn:
     with st.spinner("Analyzing X-ray with AI..."):
         prediction, _, _ = predict(image)
 
-    st.success("✅ Analysis complete.")
-
     risk_level, risk_msg, severity = calculate_risk(prediction, {"age": age})
 
     st.subheader("🧠 AI Diagnosis Result")
-    st.write(f"**Prediction:** {prediction['class']}")
-    st.write(f"**Confidence:** {prediction['confidence']:.2%}")
-
-    st.subheader("⚠️ Risk Assessment")
+    st.write(f"**Prediction:** {prediction['class']} | **Confidence:** {prediction['confidence']:.2%}")
     st.write(f"**Risk Level:** {risk_level}")
     st.caption(risk_msg)
 
     with st.spinner("Generating attention heatmap..."):
         heatmap = generate_attention_map(model, image)
-    st.image(heatmap, caption="AI Attention Map (Grad-CAM)", width=400)
+    st.image(heatmap, caption="Attention Map", width=400)
 
     report_bytes = generate_report(
         {"id": patient_id, "report_id": report_id, "age": age, "gender": gender, "doctor": doctor},
@@ -528,9 +653,7 @@ if analyze_btn:
         heatmap
     )
 
-    # ─────────────────────────────────────────
-    # SAVE TO USER-SPECIFIC STORAGE
-    # ─────────────────────────────────────────
+    # Save to user-specific storage
     with st.spinner("Saving patient data..."):
         user_folder = st.session_state["user_email"].replace('@', '_at_').replace('.', '_dot_')
         patient_folder = f"storage/{user_folder}/{patient_id}"
@@ -553,46 +676,31 @@ if analyze_btn:
 
     # Save to user's database
     add_patient({
-        "patient_id":   patient_id,
-        "report_id":    report_id,
-        "name":         name,
-        "age":          age,
-        "gender":       gender,
-        "email":        email,
-        "phone":        phone,
-        "doctor":       doctor,
-        "prediction":   prediction,
-        "risk":         risk_level,
-        "report_path":  report_path,
-        "image_url":    image_path,
-        "visit_date":   datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
+        "patient_id": patient_id,
+        "report_id": report_id,
+        "name": name,
+        "age": age,
+        "gender": gender,
+        "email": email,
+        "phone": phone,
+        "doctor": doctor,
+        "prediction": prediction,
+        "risk": risk_level,
+        "report_path": report_path,
+        "image_url": image_path,
+        "visit_date": datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
     }, st.session_state["user_email"])
 
-    # ── EMAIL PORTION ─────────────────────────────────
+    # Email
     try:
         if os.path.exists(report_path):
-            result = send_email(
-                to_email=email,
-                file_path=report_path,
-                patient_name=name,
-                prediction=prediction
-            )
-            
-            if isinstance(result, tuple):
-                success, message = result
-                if success:
-                    st.success(f"📩 Professional report emailed to {email}")
-                else:
-                    st.warning(f"⚠️ {message}")
-            else:
-                st.success(f"📩 Report sent to {email}")
-        else:
-            st.info(f"📁 Report saved locally. Download from dashboard.")
-    except Exception as e:
-        st.info(f"📁 Report saved locally. Download from dashboard.")
-    # ─────────────────────────────────────────────────────────
+            result = send_email(email, report_path, name, prediction)
+            if isinstance(result, tuple) and result[0]:
+                st.success(f"📩 Report emailed to {email}")
+    except:
+        st.info("📁 Report saved locally.")
 
-    st.success(f"✅ Visit recorded | Patient ID: `{patient_id}` | Report ID: `{report_id}`")
+    st.success(f"✅ Recorded | Patient: {patient_id} | Report: {report_id}")
 
     st.session_state["f_name"] = ""
     st.session_state["f_age"] = 1
@@ -606,164 +714,78 @@ if analyze_btn:
 st.divider()
 
 # ─────────────────────────────────────────────
-# PATIENT DASHBOARD (USER-SPECIFIC)
+# PATIENT DASHBOARD
 # ─────────────────────────────────────────────
 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-st.subheader("📊 Patient Dashboard - My Patients")
+st.subheader("📊 Patient Dashboard")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Load only current user's reports
 reports = load_db(st.session_state["user_email"])
 
-st.markdown("### 🔍 Search & Filter")
-
+# Search and Filter
 col_search, col_filter, col_button = st.columns([2, 2, 1])
 
 with col_search:
-    search_input = st.text_input(
-        "Search by Patient ID / Name / Phone / Report ID",
-        placeholder="e.g., P-AB12CD or John or R-20250115",
-        key="search_input_field"
-    )
+    search_input = st.text_input("Search by ID / Name / Phone / Report ID", key="search_input")
 
 with col_filter:
     all_doctors = sorted({r.get("doctor", "").strip() for r in reports if r.get("doctor", "").strip()})
-    doctor_options = ["All Doctors"] + all_doctors
-    filter_input = st.selectbox(
-        "Filter by Doctor",
-        options=doctor_options,
-        key="filter_input_field"
-    )
+    filter_input = st.selectbox("Filter by Doctor", ["All Doctors"] + all_doctors, key="filter_input")
 
 with col_button:
     st.write("")
-    st.write("")
-    search_clicked = st.button("🔍 Search", key="search_button", use_container_width=True)
-
-if search_clicked:
-    st.session_state["search_query"] = search_input
-    st.session_state["doctor_filter"] = filter_input
-    st.rerun()
-
-current_search = st.session_state.get("search_query", "")
-current_filter = st.session_state.get("doctor_filter", "All Doctors")
-
-def matches_search(record: dict, query: str) -> bool:
-    if not query.strip():
-        return True
-    q = query.strip().lower()
-    pid = record.get("patient_id", "").lower()
-    pname = record.get("name", "").lower()
-    pphone = record.get("phone", "").lower()
-    report_id = record.get("report_id", "").lower()
-    return (q in pid) or (q in pname) or (q in pphone) or (q in report_id)
-
-filtered_reports = [
-    r for r in reports
-    if matches_search(r, current_search)
-    and (current_filter == "All Doctors" or r.get("doctor", "") == current_filter)
-]
-
-if current_search or current_filter != "All Doctors":
-    filter_text = []
-    if current_search:
-        filter_text.append(f'Search: "{current_search}"')
-    if current_filter != "All Doctors":
-        filter_text.append(f'Doctor: {current_filter}')
-    
-    st.caption(f"🔍 Showing results for: { ' | '.join(filter_text) }")
-    
-    if st.button("🗑️ Clear Filters", key="clear_filters"):
-        st.session_state["search_query"] = ""
-        st.session_state["doctor_filter"] = "All Doctors"
+    if st.button("🔍 Search", use_container_width=True):
+        st.session_state["search_query"] = search_input
+        st.session_state["doctor_filter"] = filter_input
         st.rerun()
 
-if len(reports) == 0:
-    st.info("📋 No patients registered yet. Use the form above to add your first patient.")
-elif len(filtered_reports) == 0:
-    st.warning("No records match your search or filter criteria.")
+def matches_search(record, query):
+    if not query:
+        return True
+    q = query.lower()
+    return (q in record.get("patient_id", "").lower() or
+            q in record.get("name", "").lower() or
+            q in record.get("phone", "").lower() or
+            q in record.get("report_id", "").lower())
+
+filtered = [r for r in reports if matches_search(r, st.session_state.get("search_query", ""))]
+if st.session_state.get("doctor_filter", "All Doctors") != "All Doctors":
+    filtered = [r for r in filtered if r.get("doctor", "") == st.session_state["doctor_filter"]]
+
+if not reports:
+    st.info("No patients registered yet.")
+elif not filtered:
+    st.warning("No matching records.")
 else:
-    st.caption(f"Showing **{len(filtered_reports)}** of **{len(reports)}** total visits")
-
-    # Group by patient for better organization
+    st.caption(f"Showing {len(filtered)} of {len(reports)} records")
+    
     patients_grouped = {}
-    for report in filtered_reports[::-1]:  # Newest first
-        patient_id = report.get("patient_id")
-        if patient_id not in patients_grouped:
-            patients_grouped[patient_id] = []
-        patients_grouped[patient_id].append(report)
-
+    for report in filtered[::-1]:
+        pid = report.get("patient_id")
+        if pid not in patients_grouped:
+            patients_grouped[pid] = []
+        patients_grouped[pid].append(report)
+    
     for patient_id, patient_reports in patients_grouped.items():
         patient_name = patient_reports[0].get("name", "Unknown")
-        
         with st.expander(f"🧑 {patient_name} (ID: {patient_id}) - {len(patient_reports)} visit(s)"):
-            
             for idx, report in enumerate(patient_reports):
-                visit_label = f"📄 Visit {idx + 1} | Report: {report.get('report_id', 'N/A')} | Date: {report.get('visit_date', 'N/A')} | Risk: {report.get('risk', 'N/A')}"
-                
-                with st.expander(visit_label):
-                    col_left, col_right = st.columns([2, 1])
-                    
-                    with col_left:
-                        st.markdown(f"**👤 Patient ID:** {report.get('patient_id', 'N/A')}")
-                        st.markdown(f"**📄 Report ID:** {report.get('report_id', 'N/A')}")
-                        st.markdown(f"**📅 Visit Date:** {report.get('visit_date', 'N/A')}")
-                        st.markdown(f"**👤 Name:** {report.get('name', 'N/A')}")
-                        st.markdown(f"**🎂 Age:** {report.get('age', 'N/A')}")
-                        st.markdown(f"**⚧ Gender:** {report.get('gender', 'N/A')}")
-                        st.markdown(f"**📞 Phone:** {report.get('phone', 'N/A')}")
-                        st.markdown(f"**📧 Email:** {report.get('email', 'N/A')}")
-                        st.markdown(f"**👨‍⚕️ Doctor:** {report.get('doctor', 'N/A')}")
-                        st.markdown(f"**🧠 Prediction:** {report.get('prediction', {}).get('class', 'N/A')}")
-                        st.markdown(f"**📊 Confidence:** {report.get('prediction', {}).get('confidence', 0):.2%}")
-                        st.markdown(f"**⚠️ Risk:** {report.get('risk', 'N/A')}")
-
-                    with col_right:
-                        rpath = report.get("report_path", "")
-                        if rpath and os.path.exists(rpath):
-                            with open(rpath, "rb") as rf:
-                                unique_key = f"dl_{report.get('report_id')}_{uuid.uuid4().hex[:6]}"
-                                st.download_button(
-                                    "📄 Download Report",
-                                    data=rf,
-                                    file_name=f"{report.get('patient_id')}_{report.get('report_id')}.pdf",
-                                    mime="application/pdf",
-                                    key=unique_key
-                                )
-                        
-                        delete_key = f"del_report_{report.get('report_id')}_{idx}"
-                        if st.button("🗑️ Delete This Visit", key=delete_key):
-                            st.session_state["delete_report_id"] = report.get("report_id")
+                col_left, col_right = st.columns([2, 1])
+                with col_left:
+                    st.markdown(f"**📄 Report ID:** {report.get('report_id', 'N/A')}")
+                    st.markdown(f"**📅 Visit Date:** {report.get('visit_date', 'N/A')}")
+                    st.markdown(f"**Age:** {report['age']} | **Gender:** {report['gender']}")
+                    st.markdown(f"**Doctor:** {report.get('doctor', 'N/A')}")
+                    st.markdown(f"**Prediction:** {report['prediction']['class']} ({report['prediction']['confidence']:.2%})")
+                    st.markdown(f"**Risk:** {report['risk']}")
+                with col_right:
+                    rpath = report.get("report_path", "")
+                    if rpath and os.path.exists(rpath):
+                        with open(rpath, "rb") as f:
+                            st.download_button("📄 Download", f, 
+                                file_name=f"{patient_id}_{report['report_id']}.pdf",
+                                key=f"dl_{report['report_id']}")
+                    if st.button("🗑️ Delete", key=f"del_{report['report_id']}"):
+                        if delete_report(report['report_id'], st.session_state["user_email"]):
                             st.rerun()
-
-                    if st.session_state.get("delete_report_id") == report.get("report_id"):
-                        st.error(f"⚠️ Delete this visit (Report: {report.get('report_id')})?")
-                        col_yes, col_no = st.columns(2)
-                        if col_yes.button("✅ Yes, Delete", key=f"confirm_del_{report.get('report_id')}"):
-                            if delete_report(report.get("report_id"), st.session_state["user_email"]):
-                                st.success(f"✅ Visit {report.get('report_id')} deleted!")
-                                st.session_state["delete_report_id"] = None
-                                st.rerun()
-                        if col_no.button("❌ Cancel", key=f"cancel_del_{report.get('report_id')}"):
-                            st.session_state["delete_report_id"] = None
-                            st.rerun()
-            
-            st.markdown("---")
-            col_del_all1, col_del_all2 = st.columns([1, 3])
-            with col_del_all1:
-                if st.button(f"🗑️ Delete ALL Records for {patient_name}", key=f"del_all_{patient_id}"):
-                    st.session_state[f"confirm_del_all_{patient_id}"] = True
-            
-            if st.session_state.get(f"confirm_del_all_{patient_id}", False):
-                st.error(f"⚠️ Delete ALL {len(patient_reports)} records for {patient_name}?")
-                col_yes_all, col_no_all = st.columns(2)
-                if col_yes_all.button("✅ Yes, Delete All", key=f"confirm_all_yes_{patient_id}"):
-                    if delete_patient(patient_id, st.session_state["user_email"]):
-                        st.success(f"✅ All records for {patient_name} deleted!")
-                        st.session_state[f"confirm_del_all_{patient_id}"] = False
-                        st.rerun()
-                if col_no_all.button("❌ Cancel", key=f"confirm_all_no_{patient_id}"):
-                    st.session_state[f"confirm_del_all_{patient_id}"] = False
-                    st.rerun()
-
-st.divider()
+                st.divider()

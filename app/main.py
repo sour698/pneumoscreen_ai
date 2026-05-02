@@ -310,235 +310,41 @@ def validate_email(email: str) -> bool:
 # ─────────────────────────────────────────────
 
 def login_screen():
-    """Display beautiful login/signup screen"""
+    """Display login/signup screen"""
     
-    # Custom CSS for login page
     st.markdown("""
-    <style>
-    /* Login container styling */
-    .login-container {
-        max-width: 500px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-    
-    .login-card {
-        background: linear-gradient(135deg, rgba(22, 27, 34, 0.95), rgba(13, 17, 23, 0.95));
-        backdrop-filter: blur(10px);
-        border-radius: 24px;
-        padding: 2rem;
-        border: 1px solid rgba(31, 111, 235, 0.3);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-    
-    .login-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .login-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-    }
-    
-    .login-title {
-        font-size: 1.8rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #58a6ff, #1f6feb);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-    }
-    
-    .login-subtitle {
-        color: #8b949e;
-        font-size: 0.9rem;
-    }
-    
-    .toggle-buttons {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .toggle-btn {
-        flex: 1;
-        text-align: center;
-        padding: 0.75rem;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-weight: 600;
-    }
-    
-    .toggle-btn-active {
-        background: linear-gradient(135deg, #1f6feb, #388bfd);
-        color: white;
-        box-shadow: 0 4px 15px rgba(31, 111, 235, 0.3);
-    }
-    
-    .toggle-btn-inactive {
-        background: rgba(22, 27, 34, 0.6);
-        color: #8b949e;
-        border: 1px solid #30363d;
-    }
-    
-    .form-field {
-        margin-bottom: 1.25rem;
-    }
-    
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        color: #e6edf3;
-        font-weight: 500;
-        font-size: 0.875rem;
-    }
-    
-    .form-input {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        color: #e6edf3;
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
-    }
-    
-    .form-input:focus {
-        outline: none;
-        border-color: #1f6feb;
-        box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.2);
-    }
-    
-    .login-btn {
-        width: 100%;
-        padding: 0.75rem;
-        background: linear-gradient(135deg, #1f6feb, #388bfd);
-        border: none;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-top: 1rem;
-    }
-    
-    .login-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(31, 111, 235, 0.4);
-    }
-    
-    .divider {
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: 1.5rem 0;
-        color: #30363d;
-    }
-    
-    .divider::before,
-    .divider::after {
-        content: '';
-        flex: 1;
-        border-bottom: 1px solid #30363d;
-    }
-    
-    .divider span {
-        margin: 0 1rem;
-        font-size: 0.8rem;
-        color: #8b949e;
-    }
-    
-    .feature-badge {
-        display: flex;
-        justify-content: center;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-top: 1.5rem;
-    }
-    
-    .feature-badge span {
-        background: rgba(31, 111, 235, 0.15);
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        color: #58a6ff;
-        border: 1px solid rgba(31, 111, 235, 0.3);
-    }
-    </style>
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
+        <div style="background: linear-gradient(135deg, #1f6feb11, #388bfd11); 
+                    border-radius: 20px; padding: 2.5rem; text-align: center;
+                    border: 1px solid #1f6feb33; max-width: 450px; width: 100%;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🏥</div>
+            <h1 style="color: #58a6ff; margin-bottom: 0.5rem;">PneumoScreen AI</h1>
+            <p style="color: #8b949e; margin-bottom: 1.5rem;">Deep Learning-Based Pneumonia Screening & Reporting System</p>
     """, unsafe_allow_html=True)
     
-    # Main container
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
-    
-    # Login Card
-    st.markdown('<div class="login-card">', unsafe_allow_html=True)
-    
-    # Header
-    st.markdown("""
-    <div class="login-header">
-        <div class="login-icon">🏥</div>
-        <div class="login-title">PneumoScreen AI</div>
-        <div class="login-subtitle">Deep Learning-Based Pneumonia Screening & Reporting System</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Toggle buttons using columns
     col1, col2 = st.columns(2)
-    
-    # Determine active state
-    is_login_active = st.session_state["auth_mode"] == "login"
-    
     with col1:
-        if st.button("🔐 Login", use_container_width=True, key="login_tab_btn"):
-            if st.session_state["auth_mode"] != "login":
-                st.session_state["auth_mode"] = "login"
-                st.rerun()
-    
+        if st.button("🔐 Login", use_container_width=True, key="login_tab"):
+            st.session_state["auth_mode"] = "login"
+            st.rerun()
     with col2:
-        if st.button("📝 Sign Up", use_container_width=True, key="signup_tab_btn"):
-            if st.session_state["auth_mode"] != "signup":
-                st.session_state["auth_mode"] = "signup"
-                st.rerun()
+        if st.button("📝 Sign Up", use_container_width=True, key="signup_tab"):
+            st.session_state["auth_mode"] = "signup"
+            st.rerun()
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Feature badges
-    st.markdown("""
-    <div class="feature-badge">
-        <span>🧠 AI-Powered Analysis</span>
-        <span>🩻 Chest X-Ray</span>
-        <span>📊 Clinical Grade</span>
-        <span>⚡ Real-Time Detection</span>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('<div class="divider"><span>Secure Access</span></div>', unsafe_allow_html=True)
-    
     if st.session_state["auth_mode"] == "login":
-        # Login Form
-        st.markdown('<div style="margin-top: 0.5rem;">', unsafe_allow_html=True)
+        st.subheader("Welcome Back!")
         
-        with st.form("login_form", clear_on_submit=False):
-            email = st.text_input("📧 Email Address", placeholder="doctor@hospital.com", key="login_email")
-            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password", key="login_password")
-            
-            col_a, col_b = st.columns([1, 1])
-            with col_a:
-                login_btn = st.form_submit_button("🔓 Sign In", use_container_width=True)
-            with col_b:
-                st.markdown("""
-                <div style="font-size: 0.75rem; color: #8b949e; text-align: center; margin-top: 0.5rem;">
-                    For testing<br>user@example.com / any password
-                </div>
-                """, unsafe_allow_html=True)
+        with st.form("login_form"):
+            email = st.text_input("Email Address")
+            password = st.text_input("Password", type="password")
+            login_btn = st.form_submit_button("Sign In", use_container_width=True)
         
         if login_btn:
             if not email or not password:
-                st.error("❌ Please enter both email and password")
+                st.error("Please enter both email and password")
             else:
                 user = authenticate_user(email, password)
                 if user:
@@ -548,64 +354,41 @@ def login_screen():
                     st.session_state["user_name"] = user["name"]
                     st.rerun()
                 else:
-                    st.error("❌ Invalid email or password")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+                    st.error("Invalid email or password")
     
     else:
-        # Sign Up Form
-        st.markdown('<div style="margin-top: 0.5rem;">', unsafe_allow_html=True)
+        st.subheader("Create New Account")
         
-        with st.form("signup_form", clear_on_submit=False):
-            name = st.text_input("👤 Full Name", placeholder="Dr. John Doe", key="signup_name")
-            email = st.text_input("📧 Email Address", placeholder="doctor@hospital.com", key="signup_email")
-            password = st.text_input("🔒 Password", type="password", placeholder="Create a password", key="signup_password")
-            confirm_password = st.text_input("✓ Confirm Password", type="password", placeholder="Confirm your password", key="signup_confirm")
-            
-            col_a, col_b = st.columns([1, 1])
-            with col_a:
-                signup_btn = st.form_submit_button("🚀 Create Account", use_container_width=True)
-            with col_b:
-                st.markdown("""
-                <div style="font-size: 0.7rem; color: #8b949e; text-align: center;">
-                    Password must be<br>at least 6 characters
-                </div>
-                """, unsafe_allow_html=True)
+        with st.form("signup_form"):
+            name = st.text_input("Full Name")
+            email = st.text_input("Email Address")
+            password = st.text_input("Password", type="password")
+            confirm_password = st.text_input("Confirm Password", type="password")
+            signup_btn = st.form_submit_button("Create Account", use_container_width=True)
         
         if signup_btn:
             if not name or not email or not password:
-                st.error("❌ Please fill all fields")
-            elif len(password) < 6:
-                st.error("❌ Password must be at least 6 characters")
+                st.error("Please fill all fields")
             elif password != confirm_password:
-                st.error("❌ Passwords do not match")
+                st.error("Passwords do not match")
             elif not validate_email(email):
-                st.error("❌ Please use a valid Gmail address (@gmail.com)")
+                st.error("Please use a valid Gmail address (@gmail.com)")
             else:
                 if create_user(email, password, name):
-                    st.success("✅ Account created successfully! Please login.")
+                    st.success("Account created successfully! Please login.")
                     st.session_state["auth_mode"] = "login"
                     st.rerun()
                 else:
-                    st.error("❌ Email already exists. Please use another email or login.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+                    st.error("Email already exists. Please use another email or login.")
     
-    # Footer
     st.markdown("""
-    <div style="margin-top: 1.5rem; text-align: center;">
-        <p style="color: #8b949e; font-size: 0.7rem;">
-            🔐 HIPAA Compliant • End-to-End Encrypted • Secure Cloud Storage
-        </p>
-        <p style="color: #8b949e; font-size: 0.7rem;">
-            © 2024 PneumoScreen AI | Clinical Decision Support System
-        </p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)  # Close login-card
-    st.markdown('</div>', unsafe_allow_html=True)  # Close login-container
 
+if not st.session_state["logged_in"]:
+    login_screen()
+    st.stop()
 # ─────────────────────────────────────────────
 # MAIN APP (Only shown when logged in)
 # ─────────────────────────────────────────────

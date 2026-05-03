@@ -1,11 +1,12 @@
 import yagmail
 import os
 from datetime import datetime
+import streamlit as st
 import pytz
 
 # Gmail Configuration
-EMAIL = "sd1898691@gmail.com"
-APP_PASSWORD = "tfakvqqrbvajddoi"  # Your App Password
+EMAIL_USER = st.secrets["EMAIL_USER"]
+EMAIL_PASSWORD = st.secrets["EMAIL_PASSWORD"]  # Your App Password
 
 def send_email(to_email, file_path, patient_name="Patient", prediction=None):
     """

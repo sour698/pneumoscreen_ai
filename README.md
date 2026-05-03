@@ -183,16 +183,6 @@ B.Tech AI & ML Student
 (Check my full documentation in linkedin under licences)
 ---
 
-## ⭐ Support
-
-If you found this project useful:
-
-⭐ Star this repository
-🔁 Share it on LinkedIn
-💬 Provide feedback
-
----
-
 ## 🧠 Tags
 
 AI • Machine Learning • Deep Learning • Medical AI • Computer Vision
